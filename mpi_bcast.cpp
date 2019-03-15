@@ -23,15 +23,23 @@ int main()
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
+  ofstream out_file; // define output file
+  out_file.open(); // open the output file
 
   // WORDLD SIZE MUST BE LARGER THAN 1, MUST HAVE PROCESS 0 AND PROCESS 1 AT LEAST
-
+  if(world_size < 2 && world_rank == 0)
+  {
+    cout << "MPI_ERR_TOPOLOGY:WORLD_SIZE => Too few initialized processes.\nThe world size should be at least of size 2.\n";
+    out_file << "MPI_ERR_TOPOLOGY:WORLD_SIZE => Too few initialized processes.\nThe world size should be at least of size 2.\n";
+    MPI_Abort(MPI_COMM_WORLD, MPI_ERR_TOPOLOGY);
+  }
 
 
   if(argc != 2 && world_rank == 0)
   {
-    cout << "ERR:2:ARGC => Wrong number of command line arguments.\nUse \"mpirun -np <world_size> ./<executable> <root>\" as format.\n";
-    MPI_Abort(MPI_COMM_WORLD, -2);
+    cout << "MPI_ERR_ARG:ARGC => Wrong number of command line arguments.\nUse \"mpirun -np <world_size> ./<executable> <root>\" as format.\n";
+    out_file << "MPI_ERR_ARG:ARGC => Wrong number of command line arguments.\nUse \"mpirun -np <world_size> ./<executable> <root>\" as format.\n";
+    MPI_Abort(MPI_COMM_WORLD, MPI_ERR_ARG);
   }
 
   if(world_rank == 0)
@@ -40,12 +48,10 @@ int main()
   }
 
   // define necessary variables
-  ofstream out_file; // define output file
-  out_file.open(); // open the output file
   int ruut = atoi(argv[1]); // user specified root process for broadcast
   double start_time, alloc_time, cust_time, mpi_lib_time; // declare time variables
   const int curr_rank = 0;
-  const int equal_arrs = -1;
+  const int equal_arrs = 1;
 
   // define necessary arrays
   double** org_Bcast_arr, cust_Bcast_arr, mpi_Bcast_arr;
@@ -128,6 +134,7 @@ int main()
   }
 
 
+  // comparing every broadcasted element for equality
   for(int j = 0; j < BCAST_LEN; j++)
   {
     if(cust_Bcast_arr[i] != mpi_Bcast_arr[i])
@@ -140,17 +147,24 @@ int main()
   if(equal_arrs)
   {
     // THE CUSTOM AND DEFAULT BCAST ARRAYS ARE EQUAL
+    cout << "Custom and default are equal." << endl;
+    out_file << "Custom and default are equal." << endl;
   }
   else
   {
     // THE CUSTOM AND DEFAULT BCAST ARRAYS ARE NOT EQUAL
+    cout << "Custom and default are NOT equal." << endl;
+    out_file << "Custom and default are NOT equal." << endl;
   }
 
 
-  // PRINT THE EXECUTION TIME
-    // ALLOC TIME
-    // CUST TIME
-    // DEF LIB TIME
+  // print the execution times
+  cout << "The original broadcast array (org_Bcast_arr[]) was allocated and initialized with random double values in " << alloc_time << " seconds.\n"
+  cout << "The array was broadcasted to all other processes using \"custom_Bcast\" in " << cust_time << "seconds.\n"
+  cout << "The array was broadcasted to all other processes using \"MPI_Bcast\" in " << mpi_lib_time << "seconds.\n"
+  out_file << "The original broadcast array (org_Bcast_arr[]) was allocated and initialized with random double values in " << alloc_time << " seconds.\n"
+  out_file << "The array was broadcasted to all other processes using \"custom_Bcast\" in " << cust_time << "seconds.\n"
+  out_file << "The array was broadcasted to all other processes using \"MPI_Bcast\" in " << mpi_lib_time << "seconds.\n"
 
 
   // cleanup and finalize the MPI environment
