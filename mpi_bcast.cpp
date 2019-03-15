@@ -3,56 +3,85 @@
 #include <iostream>
 #include <cstdlib>
 
+// define constants
 #define BCAST_LEN 100000
+#define MPI_TYPES 12
 
 // declare namespace
 using namespace std;
 
 // prototype function(s)
-void custom_Bcast(void *buf, int cnt, MPI_Datatype type, int src, MPI_Comm group);
-int validate_Bcast(void *buf, int cnt, MPI_Datatype type, int src, MPI_Comm group);
+void custom_Bcast(void *buf, int cnt, MPI_Datatype type, int ruut, MPI_Comm communicator);
+int validate_Bcast(void *buf, int cnt, MPI_Datatype type, int ruut, MPI_Comm communicator);
+double range_rand_double(double low, double high);
 
 int main()
 {
+  // initialize the MPI environment
   MPI_Init(NULL, NULL);
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-  if(validate_Bcast() <= 0)
+  if(argc != 2 && world_rank == 0)
   {
-    MPI_Abort()
+    cout << "ERR:2:ARGC => Wrong number of command line arguments.\nUse \"mpirun -np <world_size> ./<executable> <root>\" as format.\n";
+    MPI_Abort(MPI_COMM_WORLD, -2);
   }
 
-  double start_time, cust_time, lib_time;
-
-  if(world_rank == root)
+  if(world_rank == 0)
   {
     start_time = MPI_Wtime(); // wall time at the start of the program  
   }
 
+  // define necessary variables
+  int ruut = atoi(argv[1]); // user specified root process for broadcast
+  double start_time, alloc_time, cust_time, lib_time; // declare time variables
+  Bcast_arr = calloc(BCAST_LEN, sizeof(double*)); // dynamically allocate array to broadcast
+  MPI_Datatype[MPI_TYPES] = {MPI_CHAR, MPI_UNSIGNED_CHAR, MPI_SIGNED_CHAR, MPI_SHORT,
+                             MPI_UNSIGNED_SHORT, MPI_INT, MPI UNSIGNED, MPI_LONG,
+                             MPI_UNSIGNED_LONG, MPI_FLOAT, MPI_DOUBLE, MPI_LONG_DOUBLE};
 
-  custom_Bcast(buffer, count, datatype, root, MPI_COMM_WORLD);
-
-
-  if(world_rank == root)
+  // populate the broadcast array
+  for(int i = 0; i < BCAST_LEN; i++)
   {
-    cust_time = MPI_Wtime() - start_time; // wall time at the start of the program  
+    Bcast_arr[i] = range_rand_double(DBL_MIN, DBL_MAX); // use double macro variables as range
   }
 
 
-  MPI_Bcast(buffer, count, datatype, root, MPI_COMM_WORLD);
-
-
-  if(world_rank == root)
+  if(world_rank == 0)
   {
-    lib_time = MPI_Wtime() - start_time - cust_time; // wall time at the start of the program  
+    alloc_time = MPI_Wtime() - start_time; // wall time at the start of the program  
+  }
+
+
+  custom_Bcast(Bcast_arr, BCAST_LEN, MPI_DOUBLE, ruut, MPI_COMM_WORLD);
+
+
+  if(world_rank == 0)
+  {
+    cust_time = MPI_Wtime() - start_time - alloc_time; // wall time at the start of the program  
+  }
+
+
+  MPI_Bcast(Bcast_arr, BCAST_LEN, MPI_DOUBLE, ruut, MPI_COMM_WORLD);
+
+
+  if(world_rank == 0)
+  {
+    lib_time = MPI_Wtime() - start_time - alloc_time - cust_time; // wall time at the start of the program  
   }
 
 }
 
 
-void custom_Bcast(void *buf, int cnt, MPI_Datatype type, int src, MPI_Comm group)
+void custom_Bcast(void* buf, int cnt, MPI_Datatype type, int ruut, MPI_Comm communicator)
 {
+
+  if(validate_Bcast(buf, cnt, type, ruut, communicator) != MPI_SUCCESS)
+  {
+    MPI_Abort()
+  }
+
   int receiver; // process(es) which will receive data from root
     
   for(receiver = root; (receiver < world_size) && (receiver < root + world_size);)
@@ -71,17 +100,24 @@ void custom_Bcast(void *buf, int cnt, MPI_Datatype type, int src, MPI_Comm group
   }
 }
 
-int validate_Bcast(void *buf, int cnt, MPI_Datatype type, int src, MPI_Comm group)
+int validate_Bcast(void* buf, int cnt, MPI_Datatype type, int ruut, MPI_Comm communicator)
 {
-  MPI_Comm_size(comm, &world_size);
-  MPI_Comm_rank(comm, &world_rank);
+  MPI_Comm_size(communicator, &world_size);
+  MPI_Comm_rank(communicator, &world_rank);
   
-  if(count <= 0) return MPI_ERR_COUNT;
-  if((root < 0) || (root >= world_size)) return MPI_ERR_ROOT;
-  if(buffer == NULL) return MPI_ERR_BUFFER;
-  // VALIDATE DATATYPE
-  // VALIDATE COMM
+  // validate all broadcast values
+  if(buf == NULL) return MPI_ERR_BUFFER;
+  if(cnt <= 0) return MPI_ERR_COUNT;
+  if(find(begin(Bcast_arr), end(Bcast_arr), type) == end(Bcast_arr)) return MPI_ERR_TYPE;
+  if((ruut < 0) || (ruut > world_size - 1)) return MPI_ERR_ROOT;
+  if(communicator == MPI_COMM_NULL) return MPI_ERR_COMM;
 
-  MPI_Barrier(comm);
-  return MPI_SUCCESS;
+  MPI_Barrier(communicator);
+  return MPI_SUCCESS; // return successful if validated
+}
+
+double range_rand_double(double low, double high)
+{
+  double range = high - low; // get the range of values
+  return (rand() / double (RAND_MAX) * (range - 1)) + low; // return a random double between high and low
 }
