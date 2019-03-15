@@ -17,4 +17,3 @@ gdb:
 
 clean:
 	rm mpi_bcast mpi_bcast.out a.out slurm*
-
