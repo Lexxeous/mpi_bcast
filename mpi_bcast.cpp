@@ -23,6 +23,11 @@ int main()
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
+
+  // WORDLD SIZE MUST BE LARGER THAN 1, MUST HAVE PROCESS 0 AND PROCESS 1 AT LEAST
+
+
+
   if(argc != 2 && world_rank == 0)
   {
     cout << "ERR:2:ARGC => Wrong number of command line arguments.\nUse \"mpirun -np <world_size> ./<executable> <root>\" as format.\n";
@@ -38,13 +43,15 @@ int main()
   ofstream out_file; // define output file
   out_file.open(); // open the output file
   int ruut = atoi(argv[1]); // user specified root process for broadcast
-  double start_time, alloc_time, cust_time, lib_time; // declare time variables
-  int curr_rank = 0;
+  double start_time, alloc_time, cust_time, mpi_lib_time; // declare time variables
+  const int curr_rank = 0;
+  const int equal_arrs = -1;
 
   // define necessary arrays
-  double** cust_Bcast_arr, mpi_Bcast_arr;
-  cust_Bcast_arr = calloc(BCAST_LEN, sizeof(double*)); // dynamically allocate array to broadcast
-  mpi_Bcast_arr = calloc(BCAST_LEN, sizeof(double*)); // dynamically allocate array to broadcast
+  double** org_Bcast_arr, cust_Bcast_arr, mpi_Bcast_arr;
+  mpi_Bcast_arr = calloc(BCAST_LEN, sizeof(double*)); // dynamically allocate original array to broadcast
+  cust_Bcast_arr = calloc(BCAST_LEN, sizeof(double*)); // dynamically allocate custom array to broadcast
+  mpi_Bcast_arr = calloc(BCAST_LEN, sizeof(double*)); // dynamically allocate default MPI array to broadcast
   mpi_types_arr = MPI_Datatype[MPI_TYPES] = {MPI_CHAR, MPI_UNSIGNED_CHAR, MPI_SIGNED_CHAR, MPI_SHORT,
                                              MPI_UNSIGNED_SHORT, MPI_INT, MPI UNSIGNED, MPI_LONG,
                                              MPI_UNSIGNED_LONG, MPI_FLOAT, MPI_DOUBLE, MPI_LONG_DOUBLE};
@@ -52,7 +59,7 @@ int main()
   // populate the broadcast array
   for(int i = 0; i < BCAST_LEN; i++)
   {
-    cust_Bcast_arr[i] = range_rand_double(DBL_MIN, DBL_MAX); // use double macro variables as range
+    org_Bcast_arr[i] = range_rand_double(DBL_MIN, DBL_MAX); // use double macro variables as range
   }
 
 
@@ -63,7 +70,12 @@ int main()
   }
 
 
-  custom_Bcast(cust_Bcast_arr, BCAST_LEN, MPI_DOUBLE, ruut, MPI_COMM_WORLD); // broadcast using custom function
+  custom_Bcast(org_Bcast_arr, BCAST_LEN, MPI_DOUBLE, ruut, MPI_COMM_WORLD); // broadcast using custom function
+
+  if(world_rank = (ruut + 1) % world_size)
+  {
+    cust_Bcast_arr = org_Bcast_arr;
+  }
 
 
   // print the first and last elements of the custom broadcast array
@@ -87,7 +99,12 @@ int main()
   }
 
 
-  MPI_Bcast(mpi_Bcast_arr, BCAST_LEN, MPI_DOUBLE, ruut, MPI_COMM_WORLD); // broadcast using default MPI function
+  MPI_Bcast(org_Bcast_arr, BCAST_LEN, MPI_DOUBLE, ruut, MPI_COMM_WORLD); // broadcast using default MPI function
+
+  if(world_rank = (ruut + 1) % world_size)
+  {
+    mpi_Bcast_arr = org_Bcast_arr;
+  }
 
 
   // print the first and last elements of the default MPI broadcast array
@@ -107,8 +124,33 @@ int main()
   // collect the default MPI library broadcast time
   if(world_rank == 0)
   {
-    lib_time = MPI_Wtime() - start_time - alloc_time - cust_time; // wall time at the start of the program  
+    mpi_lib_time = MPI_Wtime() - start_time - alloc_time - cust_time; // wall time at the start of the program  
   }
+
+
+  for(int j = 0; j < BCAST_LEN; j++)
+  {
+    if(cust_Bcast_arr[i] != mpi_Bcast_arr[i])
+    {
+      equal_arrs = 0;
+    }
+  }
+
+
+  if(equal_arrs)
+  {
+    // THE CUSTOM AND DEFAULT BCAST ARRAYS ARE EQUAL
+  }
+  else
+  {
+    // THE CUSTOM AND DEFAULT BCAST ARRAYS ARE NOT EQUAL
+  }
+
+
+  // PRINT THE EXECUTION TIME
+    // ALLOC TIME
+    // CUST TIME
+    // DEF LIB TIME
 
 
   // cleanup and finalize the MPI environment
