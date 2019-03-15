@@ -78,7 +78,8 @@ int main()
 
   custom_Bcast(org_Bcast_arr, BCAST_LEN, MPI_DOUBLE, ruut, MPI_COMM_WORLD); // broadcast using custom function
 
-  if(world_rank = (ruut + 1) % world_size)
+  // save the custom broadcasted array for all but ruut
+  if(world_rank != ruut)
   {
     cust_Bcast_arr = org_Bcast_arr;
   }
@@ -107,7 +108,8 @@ int main()
 
   MPI_Bcast(org_Bcast_arr, BCAST_LEN, MPI_DOUBLE, ruut, MPI_COMM_WORLD); // broadcast using default MPI function
 
-  if(world_rank = (ruut + 1) % world_size)
+  // save the default MPI broadcasted array for all but ruut
+  if(world_rank != ruut)
   {
     mpi_Bcast_arr = org_Bcast_arr;
   }
@@ -134,37 +136,38 @@ int main()
   }
 
 
-  // comparing every broadcasted element for equality
-  for(int j = 0; j < BCAST_LEN; j++)
+  // compare every broadcasted element for equality between the custom and the defualt MPI
+  if(world_rank != ruut)
   {
-    if(cust_Bcast_arr[i] != mpi_Bcast_arr[i])
+    for(int j = 0; j < BCAST_LEN; j++)
     {
-      equal_arrs = 0;
+      if(cust_Bcast_arr[i] != mpi_Bcast_arr[i])
+      {
+        equal_arrs = 0;
+      }
     }
   }
 
 
   if(equal_arrs)
   {
-    // THE CUSTOM AND DEFAULT BCAST ARRAYS ARE EQUAL
-    cout << "Custom and default are equal." << endl;
-    out_file << "Custom and default are equal." << endl;
+    cout << "Custom and default are equal.\n";
+    out_file << "Custom and default are equal.\n";
   }
   else
   {
-    // THE CUSTOM AND DEFAULT BCAST ARRAYS ARE NOT EQUAL
-    cout << "Custom and default are NOT equal." << endl;
-    out_file << "Custom and default are NOT equal." << endl;
+    cout << "Custom and default are NOT equal.\n";
+    out_file << "Custom and default are NOT equal.\n";
   }
 
 
   // print the execution times
-  cout << "The original broadcast array (org_Bcast_arr[]) was allocated and initialized with random double values in " << alloc_time << " seconds.\n"
-  cout << "The array was broadcasted to all other processes using \"custom_Bcast\" in " << cust_time << "seconds.\n"
-  cout << "The array was broadcasted to all other processes using \"MPI_Bcast\" in " << mpi_lib_time << "seconds.\n"
-  out_file << "The original broadcast array (org_Bcast_arr[]) was allocated and initialized with random double values in " << alloc_time << " seconds.\n"
-  out_file << "The array was broadcasted to all other processes using \"custom_Bcast\" in " << cust_time << "seconds.\n"
-  out_file << "The array was broadcasted to all other processes using \"MPI_Bcast\" in " << mpi_lib_time << "seconds.\n"
+  cout << "The original broadcast array (org_Bcast_arr[]) was allocated and initialized with random double values in " << alloc_time << " seconds.\n";
+  cout << "The array was broadcasted to all other processes using \"custom_Bcast\" in " << cust_time << "seconds.\n";
+  cout << "The array was broadcasted to all other processes using \"MPI_Bcast\" in " << mpi_lib_time << "seconds.\n";
+  out_file << "The original broadcast array (org_Bcast_arr[]) was allocated and initialized with random double values in " << alloc_time << " seconds.\n";
+  out_file << "The array was broadcasted to all other processes using \"custom_Bcast\" in " << cust_time << "seconds.\n";
+  out_file << "The array was broadcasted to all other processes using \"MPI_Bcast\" in " << mpi_lib_time << "seconds.\n";
 
 
   // cleanup and finalize the MPI environment
@@ -174,31 +177,35 @@ int main()
   return 0;
 }
 
+/*
+Format for MPI_Send() & MPI_Recv()
+  MPI_Send(void* data, int count, MPI_Datatype datatype, int destination, int tag, MPI_Comm communicator);
+  MPI_Recv(void* data, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm communicator, MPI_Status* status);
+*/
+
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
 void custom_Bcast(void* buf, int cnt, MPI_Datatype type, int ruut, MPI_Comm communicator)
 {
-
   if(validate_Bcast(buf, cnt, type, ruut, communicator) != MPI_SUCCESS)
   {
+    cout << "MPI_ERR_RETURN:VALIDATION => The custom broadcast data failed to validate.\nEnsure that you are passing valid arguments.\n";
+    out_file << "MPI_ERR_RETURN:VALIDATION => The custom broadcast data failed to validate.\nEnsure that you are passing valid arguments.\n";
     MPI_Abort(communicator, MPI_ERRORS_RETURN)
   }
-
-  int receiver; // process(es) which will receive data from root
     
-  for(receiver = root; (receiver < world_size) && (receiver < root + world_size);)
+  for(k = 0; k < world_size; k++)
   {
-    if(world_rank == root)
-      MPI_Send(buffer, count, datatype, receiver, 1, comm);
-    else if(world_rank == receiver)
-      MPI_Recv(buffer, count, datatype, root, 1, comm, null);
+    if(k == ruut)
+      continue;
 
-    if((world_rank >= receiver) && (world_rank < receiver + len))
+    if(world_rank == ruut) // root broadcasts to all
+      MPI_Send(buf, cnt, type, k, MPI_ANY_TAG, comm);
+    else // all other processes receive from root
     {
-      custom_Bcast(buffer, count, datatype, receiver, comm);
-      break;
+      MPI_Recv(buf, cnt, type, ruut, MPI_ANY_TAG, comm, MPI_STATUS_IGNORE);
+      break; // leave the for loop once each child has received the broadcast
     }
-    receiver += len;
   }
 }
 
