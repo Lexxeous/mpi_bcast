@@ -4,7 +4,7 @@ ruut?=1
 
 
 comp:
-	mpiCC -o mpi_bcast mpi_bcast.cpp
+	mpiCC -o mpi_bcast mpi_bcast.cpp custom_bcast.cpp
 
 run:
 	mpi_run -np $(procs) ./mpi_bcast $(ruut)
