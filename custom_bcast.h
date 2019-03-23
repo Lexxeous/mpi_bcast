@@ -4,6 +4,12 @@
 
 // include necessary libraries
 #include <mpi.h>
+#include <vector>
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <cstdlib>
+#include <cfloat>
 
 // define constants
 #define MPI_TYPES 12
