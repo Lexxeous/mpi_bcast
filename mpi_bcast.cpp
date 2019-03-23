@@ -50,9 +50,9 @@ int main(int argc, char* argv[])
 
   // define necessary variables and arrays
   double *org_Bcast_arr, *cust_Bcast_arr, *mpi_Bcast_arr;
-  org_Bcast_arr = (double*)malloc(sizeof(double) * BCAST_LEN);
-  cust_Bcast_arr = (double*)malloc(sizeof(double) * BCAST_LEN);
-  mpi_Bcast_arr = (double*)malloc(sizeof(double) * BCAST_LEN);
+  org_Bcast_arr = (double*)calloc(BCAST_LEN, sizeof(double));
+  cust_Bcast_arr = (double*)calloc(BCAST_LEN, sizeof(double));
+  mpi_Bcast_arr = (double*)calloc(BCAST_LEN, sizeof(double));
   double start_time, alloc_time, cust_time, garb_time, mpi_lib_time; // declare time variables
   int curr_rank = 0;
   int equal_arrs = 1;
@@ -61,9 +61,11 @@ int main(int argc, char* argv[])
   // collect the start time
   if(world_rank == ruut)
   {
-    start_time = MPI_Wtime(); // wall time at the start of the program  
+    start_time = MPI_Wtime(); // wall time at the start of the program
+    cout << "Comparing the execution time between the default library version of \"MPI_Bcast()\" and a custom implementation using only point-to-point communication...\n";
   }
 
+  MPI_Barrier(MPI_COMM_WORLD);
 
   // define and distribute broadcast arrays
   if(world_rank == ruut) // only root gets the original broadcast array
@@ -74,7 +76,8 @@ int main(int argc, char* argv[])
       org_Bcast_arr[i] = range_rand_double(DBL_MIN, DBL_MAX); // use double macro variables as range
     }
 
-    cout << "Original broadcast array[0 1 ... 99,998 99,999] = [" << org_Bcast_arr[0] << " " << org_Bcast_arr[1] << " ... " << org_Bcast_arr[99998] << " " << org_Bcast_arr[99999] << "]\n";
+    cout << world_rank << " : Original broadcast array[0 1 ... 99998 99999] = ["
+         << org_Bcast_arr[0] << " " << org_Bcast_arr[1] << " ... " << org_Bcast_arr[99998] << " " << org_Bcast_arr[99999] << "]\n";
   }
   else // all other processes get the resulting arrays
   {
@@ -82,7 +85,19 @@ int main(int argc, char* argv[])
     for(int i = 0; i < BCAST_LEN; i++)
     {
       cust_Bcast_arr[i] = (double)-1; // initialize the custom broadcast array with all -1
-      mpi_Bcast_arr[i] = (double)0; // initialize the MPI broadcast array with all 0
+      mpi_Bcast_arr[i] = (double)-2; // initialize the MPI broadcast array with all -2
+    }
+
+    if(world_rank == (ruut + 1) % world_size) // one process that is not root
+    {
+      cout << "\n" << world_rank << " : Original broadcast array[0 1 ... 99998 99999] = ["
+           << org_Bcast_arr[0] << " " << org_Bcast_arr[1] << " ... " << org_Bcast_arr[99998] << " " << org_Bcast_arr[99999] << "]\n";
+
+      cout << world_rank << " : Initialized custom broadcast array[0 1 ... 99998 99999] = ["
+           << cust_Bcast_arr[0] << " " << cust_Bcast_arr[1] << " ... " << cust_Bcast_arr[99998] << " " << cust_Bcast_arr[99999] << "]\n";
+
+      cout << world_rank << " : Initialized MPI broadcast array[0 1 ... 99998 99999] = ["
+           << mpi_Bcast_arr[0] << " " << mpi_Bcast_arr[1] << " ... " << mpi_Bcast_arr[99998] << " " << mpi_Bcast_arr[99999] << "]\n";   
     }
   }
 
@@ -93,7 +108,7 @@ int main(int argc, char* argv[])
     alloc_time = MPI_Wtime() - start_time; // time to create and initialize broadcast arrays
   }
 
-  MPI_Barrier(MPI_COMM_WORLD);
+
   custom_Bcast(org_Bcast_arr, BCAST_LEN, MPI_DOUBLE, ruut, MPI_COMM_WORLD); // broadcast using custom function
 
 
@@ -120,8 +135,8 @@ int main(int argc, char* argv[])
   {
     if(world_rank == curr_rank)
     {
-      cout << "For process " << world_rank << ":\n";
-      cout << "Custom broadcast array[0 1 ... 99,998 99,999] = [" << cust_Bcast_arr[0] << " " << cust_Bcast_arr[1] << " ... " << cust_Bcast_arr[99998] << " " << cust_Bcast_arr[99999] << "]\n";
+      cout << world_rank << " : Custom broadcast array[0 1 ... 99998 99999] = ["
+           << cust_Bcast_arr[0] << " " << cust_Bcast_arr[1] << " ... " << cust_Bcast_arr[99998] << " " << cust_Bcast_arr[99999] << "]\n";
     }
    curr_rank++;
    MPI_Barrier(MPI_COMM_WORLD); // barricade processes to print messages in correct order
@@ -156,14 +171,18 @@ int main(int argc, char* argv[])
   }
 
 
+  if(world_rank == ruut)
+    cout << endl; // for spacing
+
+
   // print the first and last elements of the default MPI broadcast array
   curr_rank = 0;
   while(curr_rank < world_size)
   {
     if(world_rank == curr_rank)
     {
-      cout << "For process " << world_rank << ":\n";
-      cout << "Default MPI broadcast array[0 1 ... 99,998 99,999] = [" << mpi_Bcast_arr[0] << " " << mpi_Bcast_arr[1] << " ... " << mpi_Bcast_arr[99998] << " " << mpi_Bcast_arr[99999] << "]\n";
+      cout << world_rank << " : Default MPI broadcast array[0 1 ... 99998 99999] = ["
+           << mpi_Bcast_arr[0] << " " << mpi_Bcast_arr[1] << " ... " << mpi_Bcast_arr[99998] << " " << mpi_Bcast_arr[99999] << "]\n";
     }
    curr_rank++;
    MPI_Barrier(MPI_COMM_WORLD); // barricade processes to print messages in correct order
@@ -182,21 +201,23 @@ int main(int argc, char* argv[])
     }
   }
 
-
-  if(equal_arrs)
+  if(world_rank == ruut)
   {
-    cout << "Custom and default are equal.\n";
-  }
-  else
-  {
-    cout << "Custom and default are NOT equal.\n";
+    if(equal_arrs)
+    {
+      cout << "\nThe custom and default broadcast implementations are equivalent.\n";
+    }
+    else
+    {
+      cout << "\nThe custom and default broadcast implementations are NOT equivalent.\n";
+    }
   }
 
 
   // print the execution times
   if(world_rank == ruut)
   {
-    cout << "The original broadcast array (org_Bcast_arr[]) was allocated and initialized with random double values in " << alloc_time << " seconds.\n";
+    cout << "\nThe original broadcast array (org_Bcast_arr[]) was allocated and initialized with random double values in " << alloc_time << " seconds.\n";
     cout << "The array was broadcasted to all other processes using \"custom_Bcast()\" in " << cust_time << "seconds.\n";
     cout << "The array was broadcasted to all other processes using \"MPI_Bcast()\" in " << mpi_lib_time << "seconds.\n";
   }
@@ -239,14 +260,14 @@ void custom_Bcast(void* buf, int cnt, MPI_Datatype type, int ruut, MPI_Comm comm
 
   if((code != MPI_SUCCESS) && world_rank == ruut)
   {
-    cout << "MPI_ERR_RETURN:VALIDATION => The custom broadcast data failed to validate.\nEnsure that you are passing valid arguments.\n";
+    cout << "\nMPI_ERR_RETURN:VALIDATION => The custom broadcast data failed to validate.\nEnsure that you are passing valid arguments.\n";
     MPI_Abort(communicator, code);
   }
 
 
   if(world_rank == ruut) // root broadcasts to all
   {
-    cout << "Using process " << ruut << " to broadcast data to all other processes.\n";
+    cout << "\nUsing process " << ruut << " as the root to broadcast data to all other processes.\n";
 
     for(int k = 0; k < world_size; k++)
     {
