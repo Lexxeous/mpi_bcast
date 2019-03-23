@@ -1,20 +1,17 @@
 // include necessary libraries
-#include <mpi.h>
 #include <iostream>
 #include <cstdlib>
 #include <fstream>
+#include <custom_bcast.h>
 
 // define constants
 #define BCAST_LEN 100000
-#define MPI_TYPES 12
 
 // declare namespace
 using namespace std;
 
 // prototype function(s)
-void custom_Bcast(void *buf, int cnt, MPI_Datatype type, int ruut, MPI_Comm communicator);
-int validate_Bcast(void *buf, int cnt, MPI_Datatype type, int ruut, MPI_Comm communicator);
-double range_rand_double(double low, double high);
+double range_rand_double(double low, double high)
 
 int main()
 {
@@ -23,11 +20,16 @@ int main()
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
+
   ofstream out_file; // define output file
   out_file.open(); // open the output file
 
-  // WORDLD SIZE MUST BE LARGER THAN 1, MUST HAVE PROCESS 0 AND PROCESS 1 AT LEAST
-  if(world_size < 2 && world_rank == 0)
+
+  int ruut = atoi(argv[1]); // user specified root process
+
+
+  // WORLD SIZE MUST BE LARGER THAN 1, MUST HAVE PROCESS 0 AND PROCESS 1 AT LEAST
+  if(world_size < 2 && world_rank == ruut)
   {
     cout << "MPI_ERR_TOPOLOGY:WORLD_SIZE => Too few initialized processes.\nThe world size should be at least of size 2.\n";
     out_file << "MPI_ERR_TOPOLOGY:WORLD_SIZE => Too few initialized processes.\nThe world size should be at least of size 2.\n";
@@ -35,48 +37,73 @@ int main()
   }
 
 
-  if(argc != 2 && world_rank == 0)
+  // command line arguments must be the executable and the root
+  if(argc != 2 && world_rank == ruut)
   {
     cout << "MPI_ERR_ARG:ARGC => Wrong number of command line arguments.\nUse \"mpirun -np <world_size> ./<executable> <root>\" as format.\n";
     out_file << "MPI_ERR_ARG:ARGC => Wrong number of command line arguments.\nUse \"mpirun -np <world_size> ./<executable> <root>\" as format.\n";
     MPI_Abort(MPI_COMM_WORLD, MPI_ERR_ARG);
   }
 
-  if(world_rank == 0)
+
+  if(world_rank == ruut)
   {
     start_time = MPI_Wtime(); // wall time at the start of the program  
   }
 
+
   // define necessary variables
-  int ruut = atoi(argv[1]); // user specified root process for broadcast
-  double start_time, alloc_time, cust_time, mpi_lib_time; // declare time variables
+  double start_time, alloc_time, cust_time, garb_time, mpi_lib_time; // declare time variables
   const int curr_rank = 0;
   const int equal_arrs = 1;
 
-  // define necessary arrays
-  double** org_Bcast_arr, cust_Bcast_arr, mpi_Bcast_arr;
-  mpi_Bcast_arr = calloc(BCAST_LEN, sizeof(double*)); // dynamically allocate original array to broadcast
-  cust_Bcast_arr = calloc(BCAST_LEN, sizeof(double*)); // dynamically allocate custom array to broadcast
-  mpi_Bcast_arr = calloc(BCAST_LEN, sizeof(double*)); // dynamically allocate default MPI array to broadcast
-  mpi_types_arr = MPI_Datatype[MPI_TYPES] = {MPI_CHAR, MPI_UNSIGNED_CHAR, MPI_SIGNED_CHAR, MPI_SHORT,
-                                             MPI_UNSIGNED_SHORT, MPI_INT, MPI UNSIGNED, MPI_LONG,
-                                             MPI_UNSIGNED_LONG, MPI_FLOAT, MPI_DOUBLE, MPI_LONG_DOUBLE};
 
-  // populate the broadcast array
-  for(int i = 0; i < BCAST_LEN; i++)
+  // define and distribute broadcast arrays
+  if(world_rank == ruut) // only root gets the original broadcast array
   {
-    org_Bcast_arr[i] = range_rand_double(DBL_MIN, DBL_MAX); // use double macro variables as range
+    double** org_Bcast_arr;
+    org_Bcast_arr = calloc(BCAST_LEN, sizeof(double*)); // dynamically allocate original array to broadcast
+
+    // populate the original broadcast array
+    for(int i = 0; i < BCAST_LEN; i++)
+    {
+      org_Bcast_arr[i] = range_rand_double(DBL_MIN, DBL_MAX); // use double macro variables as range
+    }
+
+    cout << "Original broadcast array[0 1 ... 99,998 99,999]: " << org_Bcast_arr[0] << org_Bcast_arr[1] << "..." << org_Bcast_arr[99998] << org_Bcast_arr[99999] << endl;
+    out_file << "Original broadcast array[0 1 ... 99,998 99,999]: " << org_Bcast_arr[0] << org_Bcast_arr[1] << "..." << org_Bcast_arr[99998] << org_Bcast_arr[99999] << endl;
+  }
+  else // all other processes get the resulting arrays
+  {
+    double** cust_Bcast_arr, mpi_Bcast_arr;
+    cust_Bcast_arr = calloc(BCAST_LEN, sizeof(double*)); // dynamically allocate custom array to broadcast
+    mpi_Bcast_arr = calloc(BCAST_LEN, sizeof(double*)); // dynamically allocate default MPI array to broadcast
+
+    // populate the resulting broadcast arrays
+    for(int i = 0; i < BCAST_LEN; i++)
+    {
+      cust_Bcast_arr[i] = -1; // initialize the custom broadcast array with all -1
+      mpi_Bcast_arr[i] = 0; // initialize the MPI broadcast array with all 0
+    }
   }
 
 
-  // collect the start time
-  if(world_rank == 0)
+  // collect the allocation time
+  if(world_rank == ruut)
   {
-    alloc_time = MPI_Wtime() - start_time; // wall time at the start of the program  
+    alloc_time = MPI_Wtime() - start_time; // time to create and initialize broadcast arrays
   }
 
-
+  MPI_Barrier(MPI_COMM_WORLD);
   custom_Bcast(org_Bcast_arr, BCAST_LEN, MPI_DOUBLE, ruut, MPI_COMM_WORLD); // broadcast using custom function
+
+
+  // collect the custom broadcast time
+  if(world_rank == ruut)
+  {
+    cust_time = MPI_Wtime() - start_time - alloc_time; // time to broadcast array with custom broadcast function 
+  }
+
 
   // save the custom broadcasted array for all but ruut
   if(world_rank != ruut)
@@ -91,22 +118,32 @@ int main()
   {
     if(world_rank == curr_rank)
     {
-      cout << "Custom broadcast array[0]: " << cust_Bcast_arr[0] << "..." << "Custom broadcast array[99,999]: " << cust_Bcast_arr[99999] << endl;
-      out_file << "Custom broadcast array[0]: " << cust_Bcast_arr[0] << "..." << "Custom broadcast array[99,999]: " << cust_Bcast_arr[99999] << endl;
+      cout << "For process " << world_rank << ":\n";
+      out_file << "For process " << world_rank << ":\n";
+      cout << "Custom broadcast array[0 1 ... 99,998 99,999]: " << cust_Bcast_arr[0] << cust_Bcast_arr[1] << "..." << cust_Bcast_arr[99998] << cust_Bcast_arr[99999] << endl;
+      out_file << "Custom broadcast array[0 1 ... 99,998 99,999]: " << cust_Bcast_arr[0] << cust_Bcast_arr[1] << "..." << cust_Bcast_arr[99998] << cust_Bcast_arr[99999] << endl;
     }
    curr_rank++;
    MPI_Barrier(MPI_COMM_WORLD); // barricade processes to print messages in correct order
   }
 
 
-  // collect the custom broadcast time
-  if(world_rank == 0)
+  // collect the garbage time between broadcasts
+  if(world_rank == ruut)
   {
-    cust_time = MPI_Wtime() - start_time - alloc_time; // wall time at the start of the program  
+    garb_time = MPI_Wtime() - start_time - alloc_time - cust_time;
   }
 
 
+  MPI_Barrier(MPI_COMM_WORLD);
   MPI_Bcast(org_Bcast_arr, BCAST_LEN, MPI_DOUBLE, ruut, MPI_COMM_WORLD); // broadcast using default MPI function
+
+
+  // collect the default MPI library broadcast time
+  if(world_rank == ruut)
+  {
+    mpi_lib_time = MPI_Wtime() - start_time - alloc_time - cust_time - garb1_time; // time to broadcast array with default MPI broadcast function 
+  }
 
   // save the default MPI broadcasted array for all but ruut
   if(world_rank != ruut)
@@ -121,18 +158,13 @@ int main()
   {
     if(world_rank == curr_rank)
     {
+      cout << "For process " << world_rank << ":\n";
+      out_file << "For process " << world_rank << ":\n";
       cout << "MPI broadcast array[0]: " << cust_Bcast_arr[0] << "..." << "MPI broadcast array[99,999]: " << cust_Bcast_arr[99999] << endl;
       out_file << "MPI broadcast array[0]: " << cust_Bcast_arr[0] << "..." << "MPI broadcast array[99,999]: " << cust_Bcast_arr[99999] << endl;
     }
    curr_rank++;
    MPI_Barrier(MPI_COMM_WORLD); // barricade processes to print messages in correct order
-  }
-
-
-  // collect the default MPI library broadcast time
-  if(world_rank == 0)
-  {
-    mpi_lib_time = MPI_Wtime() - start_time - alloc_time - cust_time; // wall time at the start of the program  
   }
 
 
@@ -162,12 +194,15 @@ int main()
 
 
   // print the execution times
-  cout << "The original broadcast array (org_Bcast_arr[]) was allocated and initialized with random double values in " << alloc_time << " seconds.\n";
-  cout << "The array was broadcasted to all other processes using \"custom_Bcast\" in " << cust_time << "seconds.\n";
-  cout << "The array was broadcasted to all other processes using \"MPI_Bcast\" in " << mpi_lib_time << "seconds.\n";
-  out_file << "The original broadcast array (org_Bcast_arr[]) was allocated and initialized with random double values in " << alloc_time << " seconds.\n";
-  out_file << "The array was broadcasted to all other processes using \"custom_Bcast\" in " << cust_time << "seconds.\n";
-  out_file << "The array was broadcasted to all other processes using \"MPI_Bcast\" in " << mpi_lib_time << "seconds.\n";
+  if(world_rank == ruut)
+  {
+    cout << "The original broadcast array (org_Bcast_arr[]) was allocated and initialized with random double values in " << alloc_time << " seconds.\n";
+    cout << "The array was broadcasted to all other processes using \"custom_Bcast\" in " << cust_time << "seconds.\n";
+    cout << "The array was broadcasted to all other processes using \"MPI_Bcast\" in " << mpi_lib_time << "seconds.\n";
+    out_file << "The original broadcast array (org_Bcast_arr[]) was allocated and initialized with random double values in " << alloc_time << " seconds.\n";
+    out_file << "The array was broadcasted to all other processes using \"custom_Bcast\" in " << cust_time << "seconds.\n";
+    out_file << "The array was broadcasted to all other processes using \"MPI_Bcast\" in " << mpi_lib_time << "seconds.\n";
+  }
 
 
   // cleanup and finalize the MPI environment
@@ -183,49 +218,6 @@ Format for MPI_Send() & MPI_Recv()
   MPI_Recv(void* data, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm communicator, MPI_Status* status);
 */
 
-// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-
-void custom_Bcast(void* buf, int cnt, MPI_Datatype type, int ruut, MPI_Comm communicator)
-{
-  if(validate_Bcast(buf, cnt, type, ruut, communicator) != MPI_SUCCESS)
-  {
-    cout << "MPI_ERR_RETURN:VALIDATION => The custom broadcast data failed to validate.\nEnsure that you are passing valid arguments.\n";
-    out_file << "MPI_ERR_RETURN:VALIDATION => The custom broadcast data failed to validate.\nEnsure that you are passing valid arguments.\n";
-    MPI_Abort(communicator, MPI_ERRORS_RETURN)
-  }
-    
-  for(k = 0; k < world_size; k++)
-  {
-    if(k == ruut)
-      continue;
-
-    if(world_rank == ruut) // root broadcasts to all
-      MPI_Send(buf, cnt, type, k, MPI_ANY_TAG, comm);
-    else // all other processes receive from root
-    {
-      MPI_Recv(buf, cnt, type, ruut, MPI_ANY_TAG, comm, MPI_STATUS_IGNORE);
-      break; // leave the for loop once each child has received the broadcast
-    }
-  }
-}
-
-// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-
-int validate_Bcast(void* buf, int cnt, MPI_Datatype type, int ruut, MPI_Comm communicator)
-{
-  MPI_Comm_size(communicator, &world_size);
-  MPI_Comm_rank(communicator, &world_rank);
-  
-  // validate all broadcast values
-  if(buf == NULL) return MPI_ERR_BUFFER;
-  if(cnt <= 0) return MPI_ERR_COUNT;
-  if(find(begin(mpi_types_arr), end(mpi_types_arr), type) == end(mpi_types_arr)) return MPI_ERR_TYPE;
-  if((ruut < 0) || (ruut > world_size - 1)) return MPI_ERR_ROOT;
-  if(communicator == MPI_COMM_NULL) return MPI_ERR_COMM;
-
-  MPI_Barrier(communicator);
-  return MPI_SUCCESS; // return successful if validated
-}
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
@@ -236,3 +228,4 @@ double range_rand_double(double low, double high)
 }
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+
