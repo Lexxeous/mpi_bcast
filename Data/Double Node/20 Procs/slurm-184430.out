@@ -1,0 +1,60 @@
+Comparing the execution time between the default library version of "MPI_Bcast()" and a custom implementation using only point-to-point communication...
+
+2 : Original broadcast array[0 1 ... 99998 99999] = [0 0 ... 0 0]
+2 : Initialized custom broadcast array[0 1 ... 99998 99999] = [-1 -1 ... -1 -1]
+2 : Initialized MPI broadcast array[0 1 ... 99998 99999] = [-2 -2 ... -2 -2]
+1 : Original broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+
+Using process 1 as the root to broadcast data to all other processes...
+0 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+1 : Custom broadcast array[0 1 ... 99998 99999] = [0 0 ... 0 0]
+2 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+3 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+4 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+5 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+6 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+7 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+8 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+9 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+10 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+11 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+12 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+13 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+14 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+15 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+16 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+17 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+18 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+19 : Custom broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+
+0 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+1 : Default MPI broadcast array[0 1 ... 99998 99999] = [0 0 ... 0 0]
+2 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+3 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+4 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+5 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+6 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+7 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+8 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+9 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+10 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+11 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+12 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+13 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+14 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+15 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+16 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+17 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+18 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+19 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.01432e+308 1.73781e+308 ... 6.45856e+306 1.37963e+308]
+
+The custom and default broadcast implementations are equivalent.
+
+The original broadcast array (org_Bcast_arr[]) was allocated and initialized with random double values in 0.105667 seconds.
+The array was broadcasted to all other processes using "custom_Bcast()" in 0.136287 seconds.
+The array was broadcasted to all other processes using "MPI_Bcast()" in 0.000751 seconds.
+
+Number of nodes:
+SLURM_JOB_NUM_NODES = 2.
+Tasks per node:
+SLURM_CPUS_ON_NODE = 10.

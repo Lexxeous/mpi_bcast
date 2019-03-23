@@ -1,0 +1,28 @@
+Comparing the execution time between the default library version of "MPI_Bcast()" and a custom implementation using only point-to-point communication...
+
+2 : Original broadcast array[0 1 ... 99998 99999] = [0 0 ... 0 0]
+2 : Initialized custom broadcast array[0 1 ... 99998 99999] = [-1 -1 ... -1 -1]
+2 : Initialized MPI broadcast array[0 1 ... 99998 99999] = [-2 -2 ... -2 -2]
+1 : Original broadcast array[0 1 ... 99998 99999] = [1.47431e+308 1.71141e+308 ... 5.99665e+307 5.01074e+307]
+
+Using process 1 as the root to broadcast data to all other processes...
+0 : Custom broadcast array[0 1 ... 99998 99999] = [1.47431e+308 1.71141e+308 ... 5.99665e+307 5.01074e+307]
+1 : Custom broadcast array[0 1 ... 99998 99999] = [0 0 ... 0 0]
+2 : Custom broadcast array[0 1 ... 99998 99999] = [1.47431e+308 1.71141e+308 ... 5.99665e+307 5.01074e+307]
+3 : Custom broadcast array[0 1 ... 99998 99999] = [1.47431e+308 1.71141e+308 ... 5.99665e+307 5.01074e+307]
+
+0 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.47431e+308 1.71141e+308 ... 5.99665e+307 5.01074e+307]
+1 : Default MPI broadcast array[0 1 ... 99998 99999] = [0 0 ... 0 0]
+
+The custom and default broadcast implementations are equivalent.
+
+The original broadcast array (org_Bcast_arr[]) was allocated and initialized with random double values in 0.038823 seconds.
+2 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.47431e+308 1.71141e+308 ... 5.99665e+307 5.01074e+307]
+3 : Default MPI broadcast array[0 1 ... 99998 99999] = [1.47431e+308 1.71141e+308 ... 5.99665e+307 5.01074e+307]
+The array was broadcasted to all other processes using "custom_Bcast()" in 0.020308 seconds.
+The array was broadcasted to all other processes using "MPI_Bcast()" in 0.001472 seconds.
+
+Number of nodes:
+SLURM_JOB_NUM_NODES = 2.
+Tasks per node:
+SLURM_CPUS_ON_NODE = 2.
