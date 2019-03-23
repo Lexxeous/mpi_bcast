@@ -15,6 +15,7 @@ void custom_Bcast(void* buf, int cnt, MPI_Datatype type, int ruut, MPI_Comm comm
 
   int code = validate_Bcast(buf, cnt, type, ruut, communicator, world_size);
 
+
   if((code != MPI_SUCCESS) && world_rank == ruut)
   {
     cout << "\nMPI_ERR_RETURN:VALIDATION => The custom broadcast data failed to validate.\nEnsure that you are passing valid arguments.\n";

@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --nodes=2
-#SBATCH --tasks-per-node=2
-#SBATCH --time=00:10:00
+#SBATCH --nodes=1
+#SBATCH --tasks-per-node=28
+#SBATCH --time=00:05:00
 
-mpirun -np 4 ./mpi_bcast 1
+mpirun -np 28 ./mpi_bcast 1
 
 echo "Number of nodes:"
 echo -n "SLURM_JOB_NUM_NODES = "

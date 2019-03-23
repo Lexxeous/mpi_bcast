@@ -23,6 +23,7 @@ int main(int argc, char* argv[])
   int ruut = atoi(argv[1]); // user specified root process
   srand(time(NULL)); // seed the randomizer
 
+
   // ruut must be between 0 and world_size - 1, inclusive
   if((ruut < 0) || (ruut > world_size - 1))
   {
