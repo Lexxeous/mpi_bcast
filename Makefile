@@ -17,4 +17,4 @@ gdb:
 	# mpiexec -n $(procs) gdb ./a.out
 
 clean:
-	rm mpi_bcast mpi_bcast.out a.out slurm*
+	rm mpi_bcast a.out slurm*
