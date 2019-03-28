@@ -13,7 +13,7 @@ NOTE: You can use the commands "make comp" and "make run" to get proper output t
 
 4.
 The file "mpi_job.sh" contains the SBATCH directives and Bash commands necessary to run a batch job with the desired number of processes and tasks per node. Modify this file as desired and run accordingly. There are also print statements that output SLURM environment variables for ease of data organization and documentation.
-Run "sbatch mpi_job.sh" after you have made appropriate changes to the shell file and successfully compiled using "make comp".
+Run "sbatch mpi_job.sh" after you have made appropriate changes to the shell file and successfully compiled using "make comp". You can also change the root for the broadcast by changing the second command line argument.
 
 5. Retrieve the "slurm-<job_id>.out" file however you see fit.
 
